@@ -3,6 +3,8 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useLanguage } from '@/providers/LanguageContext';
 import { useWaiterCooldown } from '@/hooks/useWaiterCooldown';
 
+import { menuApi } from '@/core/services/menuApi';
+
 interface WaiterCallModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -40,14 +42,14 @@ export const WaiterCallModal: React.FC<WaiterCallModalProps> = ({
     if (isCooldown) return;
     startCooldown();
     setStep('notifying');
-    // Simulate API notification delay
+    menuApi.callWaiter('table-1', 'Customer requested assistance at table');
     setTimeout(() => {
       setStep('success');
       setTimeout(() => {
         onSuccess();
         onClose();
       }, 1600);
-    }, 1600);
+    }, 1200);
   };
 
   return (

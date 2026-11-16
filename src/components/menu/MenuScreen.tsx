@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import SvgBellsIcon from '@/components/ui/svg-icons/BellsSvg';
 import emsa7Logo from '@/assets/logo.png';
 import { useLanguage } from '@/providers/LanguageContext';
@@ -14,6 +14,7 @@ import {
   CATEGORIES,
   MOCK_MENU_ITEMS,
 } from '@/types/menu';
+import { menuApi } from '@/core/services/menuApi';
 import { FoodCardVertical } from '@/components/food/FoodCardVertical';
 import { FoodCardHorizontal } from '@/components/food/FoodCardHorizontal';
 import { FoodDetailScreen } from '@/components/food/FoodDetailScreen';
@@ -69,9 +70,19 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({
     closeModal,
   } = useUrlModalState();
 
+  const [liveMenuItems, setLiveMenuItems] = useState<MenuItem[]>(MOCK_MENU_ITEMS);
+
+  useEffect(() => {
+    menuApi.getMenu().then(({ items }) => {
+      if (items && items.length > 0) {
+        setLiveMenuItems(items);
+      }
+    });
+  }, []);
+
   const selectedFoodItem = useMemo(
-    () => MOCK_MENU_ITEMS.find((item) => item.id === activeItemId) || null,
-    [activeItemId]
+    () => liveMenuItems.find((item) => item.id === activeItemId) || null,
+    [liveMenuItems, activeItemId]
   );
 
   // Modals state
@@ -104,34 +115,34 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({
     );
   };
 
-  // Popular items (top 2 popular items matching Figma mockup: Shoyu Ramen & Iced Green Tea)
+  // Popular items
   const popularItems = useMemo(() => {
-    let items = MOCK_MENU_ITEMS.filter((item) => item.isPopular);
+    let items = liveMenuItems.filter((item) => item.isPopular);
     items = filterByTags(items);
-    return sortItems(items).slice(0, 2);
-  }, [selectedTags, selectedSort]);
+    return sortItems(items).slice(0, 4);
+  }, [liveMenuItems, selectedTags, selectedSort]);
 
   // All items sorted & filtered
   const allItems = useMemo(() => {
-    let items = [...MOCK_MENU_ITEMS];
+    let items = [...liveMenuItems];
     items = filterByTags(items);
     return sortItems(items);
-  }, [selectedTags, selectedSort]);
+  }, [liveMenuItems, selectedTags, selectedSort]);
 
   // Items for selected category
   const categoryFilteredItems = useMemo(() => {
     let items = selectedCategory === 'all'
-      ? MOCK_MENU_ITEMS
-      : MOCK_MENU_ITEMS.filter((item) => item.category === selectedCategory);
+      ? liveMenuItems
+      : liveMenuItems.filter((item) => item.category === selectedCategory);
     items = filterByTags(items);
     return sortItems(items);
-  }, [selectedCategory, selectedTags, selectedSort]);
+  }, [liveMenuItems, selectedCategory, selectedTags, selectedSort]);
 
   // Search Results
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase().trim();
-    let result = MOCK_MENU_ITEMS.filter((item) => {
+    let result = liveMenuItems.filter((item) => {
       return (
         item.name.toLowerCase().includes(query) ||
         item.description.toLowerCase().includes(query) ||
@@ -140,7 +151,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({
     });
     result = filterByTags(result);
     return sortItems(result);
-  }, [searchQuery, selectedTags, selectedSort]);
+  }, [liveMenuItems, searchQuery, selectedTags, selectedSort]);
 
   // Helper: check if two selected option arrays are identical
   const areSelectedOptionsEqual = (
